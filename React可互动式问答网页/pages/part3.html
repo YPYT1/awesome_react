@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Part 3: React19核心新特性 - React 19 问答系统</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="quiz-page">
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1 class="quiz-title">Part 3: React19核心新特性</h1>
+            <div class="quiz-stats">
+                <div class="stat-item">
+                    <div class="stat-label">已答题数</div>
+                    <div class="stat-value"><span id="answered-count">0</span>/<span id="total-count">50</span></div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">正确率</div>
+                    <div class="stat-value" id="accuracy">0%</div>
+                </div>
+            </div>
+            <a href="../index.html" class="home-button">← 返回首页</a>
+        </div>
+
+        <div id="question-container">
+            <!-- 题目会在这里动态渲染 -->
+        </div>
+    </div>
+
+    <script src="../js/questions-part3.js"></script>
+    <script src="../js/quiz.js"></script>
+    <script>
+        initQuiz(questionsPart3, 'Part 3: React19核心新特性');
+    </script>
+</body>
+</html>
+

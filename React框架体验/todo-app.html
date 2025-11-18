@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React 19 框架体验 - Todo应用</title>
+    
+    <!-- ===== 外部依赖库 ===== -->
+    <!-- React  核心库 -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <!-- React DOM  渲染库 -->
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel 转译器，用于在浏览器中转译JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* ===== CSS 全局样式重置 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ===== CSS 变量定义 ===== */
+        /* 定义全局颜色变量，便于主题管理和维护 */
+        :root {
+            --primary-color: #667eea;      /* 主色调：紫蓝色 */
+            --primary-dark: #5a67d8;       /* 主色调深色版本 */
+            --secondary-color: #f093fb;    /* 次要色：粉紫色 */
+            --success-color: #48bb78;      /* 成功色：绿色 */
+            --warning-color: #ed8936;      /* 警告色：橙色 */
+            --danger-color: #f56565;       /* 危险色：红色 */
+            --text-primary: #2d3748;       /* 主要文本色 */
+            --text-secondary: #718096;     /* 次要文本色 */
+            --bg-primary: #ffffff;         /* 主背景色 */
+            --bg-secondary: #f7fafc;       /* 次要背景色 */
+            --border-color: #e2e8f0;       /* 边框色 */
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);  /* 阴影效果 */
+        }
+
+        /* ===== 页面基础样式 ===== */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* ===== 容器布局样式 ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 页面头部样式 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* 应用主容器：侧边栏 + 主内容的弹性布局 */
+        .app-container {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        /* ===== 侧边栏样式 ===== */
+        .sidebar {
+            width: 300px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            position: sticky;  /* 粘性定位，滚动时保持在视窗内 */
+            top: 20px;
+        }
+
+        /* 侧边栏标题 */
+        .sidebar h3 {
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+        }
+
+        /* ===== 统计卡片样式 ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;  /* 2列网格布局 */
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* ===== 进度条样式 ===== */
+        .progress-section {
+            margin-bottom: 25px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+            border-radius: 4px;
+            transition: width 0.3s ease;  /* 进度变化动画 */
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* ===== 筛选器样式 ===== */
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-btn {
+            padding: 10px 15px;
+            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .filter-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(5px);  /* 悬停时轻微右移效果 */
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* ===== 导出按钮样式 ===== */
+        .export-section {
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .export-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            background: white;
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* ===== 主内容区域样式 ===== */
+        .main-content {
+            flex: 1;  /* 占据剩余空间 */
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        /* ===== 表单样式 ===== */
+        .todo-form {
+            background: var(--bg-secondary);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+
+        .todo-form:focus-within {
+            border-color: var(--primary-color);  /* 表单获得焦点时的边框色 */
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* 必填字段标记 */
+        .required {
+            color: var(--danger-color);
+        }
+
+        /* 输入框基础样式 */
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;  /* 只允许垂直调整大小 */
+            min-height: 80px;
+        }
+
+        /* ===== 按钮样式系统 ===== */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        /* 主要按钮样式 */
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);  /* 悬停时上浮效果 */
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* 次要按钮样式 */
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+            transform: translateY(-1px);
+        }
+
+        /* 危险按钮样式（删除等操作） */
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(245, 101, 101, 0.3);
+        }
+
+        /* 成功按钮样式 */
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        /* ===== 任务列表样式 ===== */
+        .todo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 单个任务项样式 */
+        .todo-item {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .todo-item:hover {
+            transform: translateY(-2px);  /* 悬停时上浮 */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        /* 已完成任务的样式 */
+        .todo-item.completed {
+            opacity: 0.7;
+            border-left-color: var(--success-color);
+        }
+
+        .todo-item.completed .todo-title {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        /* 优先级指示条 */
+        .priority-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            border-radius: 0 0 0 10px;
+        }
+
+        .priority-high { background: var(--danger-color); }
+        .priority-medium { background: var(--warning-color); }
+        .priority-low { background: var(--success-color); }
+
+        /* 任务头部：标题和操作按钮 */
+        .todo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .todo-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);  /* 悬停时轻微放大 */
+        }
+
+        /* 任务描述 */
+        .todo-description {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        /* 任务元信息（优先级、分类、截止日期） */
+        .todo-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* 优先级标记样式 */
+        .priority-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: white;
+        }
+
+        .priority-badge.high { background: var(--danger-color); }
+        .priority-badge.medium { background: var(--warning-color); }
+        .priority-badge.low { background: var(--success-color); }
+
+        /* 分类标签样式 */
+        .category-tag {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-color);
+        }
+
+        /* 截止日期样式 */
+        .due-date {
+            color: var(--text-secondary);
+        }
+
+        .due-date.overdue {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        /* ===== 搜索框样式 ===== */
+        .search-container {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;  /* 左侧留空间给搜索图标 */
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        /* ===== 空状态样式 ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .empty-state p {
+            font-size: 1.1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* ===== 模态框样式 ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: slideIn 0.3s ease;
+        }
+
+        .modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* ===== 动画效果 ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* ===== 响应式设计 ===== */
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: static;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .todo-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .todo-meta {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- React应用的挂载点 -->
+    <div id="root"></div>
+
+    <!-- React应用的JavaScript代码 -->
+    <script type="text/babel">
+        // ===== React Hooks 解构 =====
+        // 从React中解构出常用的Hooks，避免重复写React.useState等
+        const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+        // ===== 工具函数 =====
+        
+        // 生成唯一ID的函数
+        // 使用时间戳和随机数组合，确保ID的唯一性
+        const generateId = () => {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        };
+
+        // 格式化日期显示
+        // 将ISO日期字符串转换为用户友好的格式
+        const formatDate = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        };
+
+        // 检查任务是否已逾期
+        // 比较截止日期与当前日期
+        const isOverdue = (dueDate) => {
+            if (!dueDate) return false;
+            const today = new Date();
+            const due = new Date(dueDate);
+            // 设置时间为当天开始，只比较日期不比较时间
+            today.setHours(0, 0, 0, 0);
+            due.setHours(0, 0, 0, 0);
+            return due < today;
+        };
+
+        // 导出数据为JSON格式
+        const exportToJSON = (todos) => {
+            const dataStr = JSON.stringify(todos, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `todos-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);  // 清理内存
+        };
+
+        // 导出数据为CSV格式
+        const exportToCSV = (todos) => {
+            // CSV表头
+            const headers = ['标题', '描述', '优先级', '分类', '截止日期', '状态', '创建时间'];
+            
+            // 转换数据为CSV行
+            const csvData = todos.map(todo => [
+                todo.title,
+                todo.description,
+                todo.priority,
+                todo.category,
+                todo.dueDate ? formatDate(todo.dueDate) : '',
+                todo.completed ? '已完成' : '待完成',
+                formatDate(todo.createdAt)
+            ]);
+            
+            // 组合表头和数据
+            const csvContent = [headers, ...csvData]
+                .map(row => row.map(field => `"${field}"`).join(','))
+                .join('\n');
+            
+            // 创建下载链接
+            const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `todos-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+        };
+
+        // ===== 自定义Hook：本地存储 =====
+        // 这个Hook封装了localStorage的读写操作，提供类似useState的接口
+        const useLocalStorage = (key, initialValue) => {
+            // 使用useState来管理状态，初始值从localStorage读取
+            const [storedValue, setStoredValue] = useState(() => {
+                try {
+                    // 尝试从localStorage获取数据
+                    const item = window.localStorage.getItem(key);
+                    // 如果存在数据，解析JSON；否则返回初始值
+                    return item ? JSON.parse(item) : initialValue;
+                } catch (error) {
+                    // 如果解析失败，返回初始值
+                    console.error(`Error reading localStorage key "${key}":`, error);
+                    return initialValue;
+                }
+            });
+
+            // 封装的设置函数，同时更新state和localStorage
+            const setValue = useCallback((value) => {
+                try {
+                    // 支持函数式更新（类似useState）
+                    const valueToStore = value instanceof Function ? value(storedValue) : value;
+                    // 更新React状态
+                    setStoredValue(valueToStore);
+                    // 同步到localStorage
+                    window.localStorage.setItem(key, JSON.stringify(valueToStore));
+                } catch (error) {
+                    console.error(`Error setting localStorage key "${key}":`, error);
+                }
+            }, [key, storedValue]);
+
+            // 返回当前值和设置函数，类似useState的返回值
+            return [storedValue, setValue];
+        };
+
+        // ===== 自定义Hook：防抖 =====
+        // 防抖Hook，用于延迟执行频繁变化的值（如搜索输入）
+        const useDebounce = (value, delay) => {
+            // 存储防抖后的值
+            const [debouncedValue, setDebouncedValue] = useState(value);
+
+            useEffect(() => {
+                // 设置定时器，在delay毫秒后更新防抖值
+                const handler = setTimeout(() => {
+                    setDebouncedValue(value);
+                }, delay);
+
+                // 清理函数：如果value在delay时间内再次变化，清除之前的定时器
+                return () => {
+                    clearTimeout(handler);
+                };
+            }, [value, delay]); // 依赖value和delay
+
+            return debouncedValue;
+        };
+
+        // ===== React组件：任务表单 =====
+        // 用于添加新任务或编辑现有任务的表单组件
+        const TodoForm = ({ onAddTodo, editingTodo, onUpdateTodo, onCancelEdit }) => {
+            // ===== 表单状态管理 =====
+            const [formData, setFormData] = useState({
+                title: '',
+                description: '',
+                priority: 'medium',
+                category: '',
+                dueDate: ''
+            });
+
+            // ===== 编辑模式处理 =====
+            // 当editingTodo变化时，更新表单数据
+            useEffect(() => {
+                if (editingTodo) {
+                    // 编辑模式：填充现有任务数据
+                    setFormData({
+                        title: editingTodo.title || '',
+                        description: editingTodo.description || '',
+                        priority: editingTodo.priority || 'medium',
+                        category: editingTodo.category || '',
+                        dueDate: editingTodo.dueDate || ''
+                    });
+                } else {
+                    // 添加模式：重置表单
+                    setFormData({
+                        title: '',
+                        description: '',
+                        priority: 'medium',
+                        category: '',
+                        dueDate: ''
+                    });
+                }
+            }, [editingTodo]);
+
+            // ===== 表单处理函数 =====
+            
+            // 处理输入框变化
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: value
+                }));
+            };
+
+            // 处理表单提交
+            const handleSubmit = (e) => {
+                e.preventDefault();  // 阻止默认的表单提交行为
+                
+                // 表单验证：标题是必填的
+                if (!formData.title.trim()) {
+                    alert('请输入任务标题');
+                    return;
+                }
+
+                if (editingTodo) {
+                    // 编辑模式：更新现有任务
+                    onUpdateTodo(editingTodo.id, formData);
+                } else {
+                    // 添加模式：创建新任务
+                    onAddTodo(formData);
+                    // 重置表单
+                    setFormData({
+                        title: '',
+                        description: '',
+                        priority: 'medium',
+                        category: '',
+                        dueDate: ''
+                    });
+                }
+            };
+
+            // ===== 组件渲染 =====
+            return (
+                <form className="todo-form" onSubmit={handleSubmit}>
+                    {/* 第一行：标题和优先级 */}
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label htmlFor="title">
+                                任务标题 <span className="required">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="title"
+                                name="title"
+                                value={formData.title}
+                                onChange={handleInputChange}
+                                placeholder="输入任务标题..."
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="priority">优先级</label>
+                            <select
+                                id="priority"
+                                name="priority"
+                                value={formData.priority}
+                                onChange={handleInputChange}
+                            >
+                                <option value="low">低优先级</option>
+                                <option value="medium">中优先级</option>
+                                <option value="high">高优先级</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* 第二行：分类和截止日期 */}
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label htmlFor="category">分类</label>
+                            <input
+                                type="text"
+                                id="category"
+                                name="category"
+                                value={formData.category}
+                                onChange={handleInputChange}
+                                placeholder="工作、学习、生活..."
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="dueDate">截止日期</label>
+                            <input
+                                type="date"
+                                id="dueDate"
+                                name="dueDate"
+                                value={formData.dueDate}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+                    </div>
+
+                    {/* 第三行：描述 */}
+                    <div className="form-group">
+                        <label htmlFor="description">任务描述</label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            placeholder="详细描述任务内容..."
+                            rows="3"
+                        />
+                    </div>
+
+                    {/* 操作按钮 */}
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                        {editingTodo && (
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={onCancelEdit}
+                            >
+                                取消编辑
+                            </button>
+                        )}
+                        <button type="submit" className="btn btn-primary">
+                            {editingTodo ? '更新任务' : '添加任务'}
+                        </button>
+                    </div>
+                </form>
+            );
+        };
+
+        // ===== React组件：任务项 =====
+        // 显示单个任务的组件，包含所有任务信息和操作按钮
+        const TodoItem = ({ todo, onToggle, onDelete, onEdit }) => {
+            // 根据优先级获取对应的颜色类名
+            const getPriorityColor = (priority) => {
+                const colors = {
+                    high: '#f56565',    // 红色
+                    medium: '#ed8936',  // 橙色
+                    low: '#48bb78'     // 绿色
+                };
+                return colors[priority] || colors.medium;
+            };
+
+            // 根据分类获取对应的图标
+            const getCategoryIcon = (category) => {
+                const icons = {
+                    '工作': '💼',
+                    '学习': '📚',
+                    '生活': '🏠',
+                    '健康': '💪',
+                    '娱乐': '🎮',
+                    '购物': '🛒'
+                };
+                return icons[category] || '📝';
+            };
+
+            return (
+                <div className={`todo-item ${todo.completed ? 'completed' : ''}`}>
+                    {/* 优先级指示条 */}
+                    <div 
+                        className="priority-indicator"
+                        style={{ backgroundColor: getPriorityColor(todo.priority) }}
+                    />
+                    
+                    {/* 任务头部：标题和操作按钮 */}
+                    <div className="todo-header">
+                        <h3 className="todo-title">{todo.title}</h3>
+                        <div className="todo-actions">
+                            <button
+                                className="action-btn btn-success"
+                                onClick={() => onToggle(todo.id)}
+                                title={todo.completed ? '标记为未完成' : '标记为已完成'}
+                            >
+                                {todo.completed ? '↩️' : '✅'}
+                            </button>
+                            <button
+                                className="action-btn btn-secondary"
+                                onClick={() => onEdit(todo)}
+                                title="编辑任务"
+                            >
+                                ✏️
+                            </button>
+                            <button
+                                className="action-btn btn-danger"
+                                onClick={() => onDelete(todo.id)}
+                                title="删除任务"
+                            >
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 任务描述 */}
+                    {todo.description && (
+                        <p className="todo-description">{todo.description}</p>
+                    )}
+
+                    {/* 任务元信息 */}
+                    <div className="todo-meta">
+                        {/* 优先级标记 */}
+                        <div className="meta-item">
+                            <span className={`priority-badge ${todo.priority}`}>
+                                {todo.priority === 'high' ? '高优先级' : 
+                                 todo.priority === 'medium' ? '中优先级' : '低优先级'}
+                            </span>
+                        </div>
+
+                        {/* 分类标签 */}
+                        {todo.category && (
+                            <div className="meta-item">
+                                <span className="category-tag">
+                                    {getCategoryIcon(todo.category)} {todo.category}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* 截止日期 */}
+                        {todo.dueDate && (
+                            <div className="meta-item">
+                                <span className={`due-date ${isOverdue(todo.dueDate) && !todo.completed ? 'overdue' : ''}`}>
+                                    📅 {formatDate(todo.dueDate)}
+                                    {isOverdue(todo.dueDate) && !todo.completed && ' (已逾期)'}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* 创建时间 */}
+                        <div className="meta-item">
+                            <span>🕒 {formatDate(todo.createdAt)}</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ===== React组件：侧边栏 =====
+        // 显示统计信息、进度条和筛选器的侧边栏组件
+        const Sidebar = ({ todos, filter, setFilter, priorityFilter, setPriorityFilter, onExport }) => {
+            // ===== 统计数据计算 =====
+            // 使用useMemo缓存计算结果，避免每次渲染都重新计算
+            const stats = useMemo(() => {
+                const total = todos.length;
+                const completed = todos.filter(todo => todo.completed).length;
+                const pending = total - completed;
+                const overdue = todos.filter(todo => 
+                    !todo.completed && todo.dueDate && isOverdue(todo.dueDate)
+                ).length;
+                
+                return { total, completed, pending, overdue };
+            }, [todos]);
+
+            // 计算完成进度百分比
+            const completionRate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
+
+            return (
+                <div className="sidebar">
+                    {/* 统计信息 */}
+                    <div className="stats-section">
+                        <h3>📊 任务统计</h3>
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-number">{stats.total}</div>
+                                <div className="stat-label">总任务</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-number">{stats.completed}</div>
+                                <div className="stat-label">已完成</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-number">{stats.pending}</div>
+                                <div className="stat-label">待完成</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-number">{stats.overdue}</div>
+                                <div className="stat-label">已逾期</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 完成进度 */}
+                    <div className="progress-section">
+                        <h3>📈 完成进度</h3>
+                        <div className="progress-bar">
+                            <div 
+                                className="progress-fill" 
+                                style={{ width: `${completionRate}%` }}
+                            />
+                        </div>
+                        <div className="progress-text">
+                            {completionRate.toFixed(1)}% 完成 ({stats.completed}/{stats.total})
+                        </div>
+                    </div>
+
+                    {/* 状态筛选器 */}
+                    <div className="filter-section">
+                        <h3>🔍 状态筛选</h3>
+                        <div className="filter-buttons">
+                            {[
+                                { key: 'all', label: '全部任务', icon: '📋' },
+                                { key: 'pending', label: '待完成', icon: '⏳' },
+                                { key: 'completed', label: '已完成', icon: '✅' },
+                                { key: 'overdue', label: '已逾期', icon: '⏰' }
+                            ].map(({ key, label, icon }) => (
+                                <button
+                                    key={key}
+                                    className={`filter-btn ${filter === key ? 'active' : ''}`}
+                                    onClick={() => setFilter(key)}
+                                >
+                                    {icon} {label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 优先级筛选器 */}
+                    <div className="filter-section">
+                        <h3>🎯 优先级筛选</h3>
+                        <div className="filter-buttons">
+                            {[
+                                { key: 'all', label: '全部优先级', icon: '🎯' },
+                                { key: 'high', label: '高优先级', icon: '🔴' },
+                                { key: 'medium', label: '中优先级', icon: '🟡' },
+                                { key: 'low', label: '低优先级', icon: '🟢' }
+                            ].map(({ key, label, icon }) => (
+                                <button
+                                    key={key}
+                                    className={`filter-btn ${priorityFilter === key ? 'active' : ''}`}
+                                    onClick={() => setPriorityFilter(key)}
+                                >
+                                    {icon} {label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 数据导出 */}
+                    <div className="export-section">
+                        <h3>💾 数据导出</h3>
+                        <div className="export-buttons">
+                            <button 
+                                className="export-btn"
+                                onClick={() => onExport('json')}
+                                title="导出为JSON格式"
+                            >
+                                📄 JSON
+                            </button>
+                            <button 
+                                className="export-btn"
+                                onClick={() => onExport('csv')}
+                                title="导出为CSV格式"
+                            >
+                                📊 CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ===== React组件：搜索栏 =====
+        // 提供任务搜索功能的组件
+        const SearchBar = ({ searchTerm, setSearchTerm }) => {
+            return (
+                <div className="search-container">
+                    <div className="search-icon">🔍</div>
+                    <input
+                        type="text"
+                        className="search-input"
+                        placeholder="搜索任务标题或描述..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            );
+        };
+
+        // ===== React组件：空状态 =====
+        // 当没有任务时显示的空状态组件
+        const EmptyState = ({ filter }) => {
+            // 根据当前筛选条件显示不同的空状态消息
+            const getEmptyMessage = () => {
+                switch (filter) {
+                    case 'completed':
+                        return {
+                            icon: '🎉',
+                            title: '还没有完成的任务',
+                            message: '完成一些任务来看到它们出现在这里！'
+                        };
+                    case 'pending':
+                        return {
+                            icon: '✨',
+                            title: '没有待完成的任务',
+                            message: '太棒了！你已经完成了所有任务。'
+                        };
+                    case 'overdue':
+                        return {
+                            icon: '⏰',
+                            title: '没有逾期任务',
+                            message: '很好！你的时间管理很棒。'
+                        };
+                    default:
+                        return {
+                            icon: '📝',
+                            title: '还没有任务',
+                            message: '添加你的第一个任务开始管理你的待办事项吧！'
+                        };
+                }
+            };
+
+            const { icon, title, message } = getEmptyMessage();
+
+            return (
+                <div className="empty-state">
+                    <div className="empty-state-icon">{icon}</div>
+                    <h3>{title}</h3>
+                    <p>{message}</p>
+                </div>
+            );
+        };
+
+        // ===== React组件：确认模态框 =====
+        // 用于确认删除操作的模态框组件
+        const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+            // 如果模态框未打开，不渲染任何内容
+            if (!isOpen) return null;
+
+            return (
+                // 模态框遮罩层，点击可关闭
+                <div className="modal-overlay" onClick={onClose}>
+                    {/* 模态框主体，阻止事件冒泡 */}
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        {/* 模态框头部 */}
+                        <div className="modal-header">
+                            <h3 className="modal-title">{title}</h3>
+                            <button className="close-btn" onClick={onClose}>×</button>
+                        </div>
+                        
+                        {/* 模态框内容 */}
+                        <div style={{ marginBottom: '20px', padding: '0 25px' }}>
+                            <p>{message}</p>
+                        </div>
+                        
+                        {/* 操作按钮 */}
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', padding: '0 25px 25px' }}>
+                            <button className="btn btn-secondary" onClick={onClose}>
+                                取消
+                            </button>
+                            <button className="btn btn-danger" onClick={onConfirm}>
+                                确认删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ===== 主应用组件 =====
+        // 这是整个Todo应用的根组件，管理所有状态和业务逻辑
+        const TodoApp = () => {
+            // ===== 状态管理 =====
+            // 使用自定义Hook管理任务列表，数据会自动保存到localStorage
+            const [todos, setTodos] = useLocalStorage('todos', []);
+            // 当前筛选条件（all, pending, completed, overdue）
+            const [filter, setFilter] = useState('all');
+            // 优先级筛选条件（all, high, medium, low）
+            const [priorityFilter, setPriorityFilter] = useState('all');
+            // 搜索关键词
+            const [searchTerm, setSearchTerm] = useState('');
+            // 当前正在编辑的任务（null表示不在编辑状态）
+            const [editingTodo, setEditingTodo] = useState(null);
+            // 删除确认模态框状态
+            const [deleteModal, setDeleteModal] = useState({ isOpen: false, todoId: null });
+            
+            // ===== 学习进度跟踪 =====
+            // 当用户添加任务时，标记项目实战阶段为已完成
+            useEffect(() => {
+                if (todos.length > 0) {
+                    const stageId = 'stage5';  // 项目实战阶段ID
+                    const savedProgress = localStorage.getItem('react19_learning_progress');
+                    const progress = savedProgress ? JSON.parse(savedProgress) : {};
+                    
+                    // 更新学习进度
+                    progress[stageId] = {
+                        ...progress[stageId],
+                        completed: 0,
+                        total: 0,
+                        accuracy: 0,
+                        projectCompleted: true,  // 标记项目已完成
+                        lastAccessed: new Date().toISOString()
+                    };
+                    
+                    localStorage.setItem('react19_learning_progress', JSON.stringify(progress));
+                }
+            }, [todos.length]); // 依赖任务数量
+
+            // ===== 防抖搜索 =====
+            // 使用防抖Hook，避免用户每输入一个字符就触发搜索
+            const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+            // ===== 业务逻辑函数 =====
+            
+            // 添加新任务
+            const addTodo = useCallback((todoData) => {
+                const newTodo = {
+                    id: generateId(),           // 生成唯一ID
+                    ...todoData,               // 展开表单数据
+                    completed: false,          // 默认未完成
+                    createdAt: new Date().toISOString()  // 创建时间
+                };
+                // 新任务添加到列表开头
+                setTodos(prev => [newTodo, ...prev]);
+            }, [setTodos]);
+
+            // 更新任务
+            const updateTodo = useCallback((id, updates) => {
+                setTodos(prev => prev.map(todo => 
+                    todo.id === id ? { ...todo, ...updates } : todo
+                ));
+                setEditingTodo(null);  // 退出编辑模式
+            }, [setTodos]);
+
+            // 切换任务完成状态
+            const toggleTodo = useCallback((id) => {
+                setTodos(prev => prev.map(todo => 
+                    todo.id === id ? { ...todo, completed: !todo.completed } : todo
+                ));
+            }, [setTodos]);
+
+            // 删除任务
+            const deleteTodo = useCallback((id) => {
+                setTodos(prev => prev.filter(todo => todo.id !== id));
+                setDeleteModal({ isOpen: false, todoId: null });  // 关闭确认模态框
+            }, [setTodos]);
+
+            // 处理删除按钮点击（显示确认模态框）
+            const handleDeleteClick = (id) => {
+                setDeleteModal({ isOpen: true, todoId: id });
+            };
+
+            // 处理数据导出
+            const handleExport = (format) => {
+                if (format === 'json') {
+                    exportToJSON(todos);
+                } else if (format === 'csv') {
+                    exportToCSV(todos);
+                }
+            };
+
+            // ===== 任务筛选和排序 =====
+            // 使用useMemo缓存筛选结果，只有当依赖项变化时才重新计算
+            const filteredTodos = useMemo(() => {
+                let filtered = todos;
+
+                // 第一步：按状态筛选
+                switch (filter) {
+                    case 'completed':
+                        filtered = filtered.filter(todo => todo.completed);
+                        break;
+                    case 'pending':
+                        filtered = filtered.filter(todo => !todo.completed);
+                        break;
+                    case 'overdue':
+                        filtered = filtered.filter(todo => 
+                            !todo.completed && todo.dueDate && isOverdue(todo.dueDate)
+                        );
+                        break;
+                    // 'all' 情况不需要筛选
+                }
+
+                // 第二步：按优先级筛选
+                if (priorityFilter !== 'all') {
+                    filtered = filtered.filter(todo => todo.priority === priorityFilter);
+                }
+
+                // 第三步：按搜索词筛选（标题和描述）
+                if (debouncedSearchTerm) {
+                    const searchLower = debouncedSearchTerm.toLowerCase();
+                    filtered = filtered.filter(todo => 
+                        todo.title.toLowerCase().includes(searchLower) ||
+                        todo.description.toLowerCase().includes(searchLower)
+                    );
+                }
+
+                // 第四步：排序
+                return filtered.sort((a, b) => {
+                    // 首先按完成状态排序：未完成的在前
+                    if (a.completed !== b.completed) {
+                        return a.completed - b.completed;
+                    }
+                    
+                    // 然后按优先级排序：高优先级在前
+                    const priorityOrder = { high: 3, medium: 2, low: 1 };
+                    if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+                        return priorityOrder[b.priority] - priorityOrder[a.priority];
+                    }
+                    
+                    // 最后按创建时间排序：新创建的在前
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                });
+            }, [todos, filter, priorityFilter, debouncedSearchTerm]);
+
+            // ===== 组件渲染 =====
+            return (
+                <div className="container">
+                    {/* 页面头部 */}
+                    <div className="header">
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+                            <div>
+                                <h1>React 19 框架体验 - Todo应用</h1>
+
+                                <p>高级Todo应用 - 完整的任务管理解决方案</p>
+                            </div>
+                            {/* 返回学习路线按钮 */}
+                            <button 
+                                onClick={() => window.location.href = '../index.html'}
+                                style={{
+                                    background: 'rgba(255,255,255,0.2)',
+                                    color: 'white',
+                                    border: '1px solid rgba(255,255,255,0.3)',
+                                    borderRadius: '8px',
+                                    padding: '8px 16px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    transition: 'all 0.3s ease'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.background = 'rgba(255,255,255,0.3)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.background = 'rgba(255,255,255,0.2)';
+                                }}
+                            >
+                                📖 返回学习路线
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 应用主体：侧边栏 + 主内容 */}
+                    <div className="app-container">
+                        {/* 侧边栏：统计信息和筛选器 */}
+                        <Sidebar 
+                            todos={todos}
+                            filter={filter}
+                            setFilter={setFilter}
+                            priorityFilter={priorityFilter}
+                            setPriorityFilter={setPriorityFilter}
+                            onExport={handleExport}
+                        />
+
+                        {/* 主内容区域 */}
+                        <div className="main-content">
+                            {/* 任务表单：添加或编辑任务 */}
+                            <TodoForm 
+                                onAddTodo={addTodo}
+                                editingTodo={editingTodo}
+                                onUpdateTodo={updateTodo}
+                                onCancelEdit={() => setEditingTodo(null)}
+                            />
+
+                            {/* 搜索栏 */}
+                             <SearchBar 
+                                 searchTerm={searchTerm}
+                                 setSearchTerm={setSearchTerm}
+                             />
+
+                             {/* 任务列表 */}
+                             <div className="todo-list">
+                                 {filteredTodos.length === 0 ? (
+                                     // 空状态：没有任务时显示
+                                     <EmptyState filter={filter} />
+                                 ) : (
+                                     // 任务列表：渲染所有筛选后的任务
+                                     filteredTodos.map(todo => (
+                                         <TodoItem
+                                             key={todo.id}  // React需要的唯一key
+                                             todo={todo}
+                                             onToggle={toggleTodo}
+                                             onDelete={handleDeleteClick}
+                                             onEdit={setEditingTodo}
+                                         />
+                                     ))
+                                 )}
+                             </div>
+                         </div>
+                     </div>
+
+                     {/* 删除确认模态框 */}
+                     <ConfirmModal
+                         isOpen={deleteModal.isOpen}
+                         onClose={() => setDeleteModal({ isOpen: false, todoId: null })}
+                         onConfirm={() => deleteTodo(deleteModal.todoId)}
+                         title="确认删除"
+                         message="你确定要删除这个任务吗？此操作无法撤销。"
+                     />
+                 </div>
+             );
+         };
+
+         // ===== 应用启动 =====
+         // 使用React 19的新API创建根节点并渲染应用
+         const root = ReactDOM.createRoot(document.getElementById('root'));
+         root.render(<TodoApp />);
+     </script>
+ </body>
+ </html>
